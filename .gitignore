@@ -1,0 +1,16 @@
+node_modules/
+logs/
+.env
+*.log
+dist/
+.DS_Store
+npm-debug.log
+docker-compose.override.yml
+.idea/
+.vscode/
+coverage/
+*.sqlite
+*.sqlite3
+*.db
+*.pid
+*.tgz 
