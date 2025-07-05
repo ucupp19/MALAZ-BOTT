@@ -413,6 +413,27 @@ async function searchYouTubeForSpotify(artist, title) {
     return null;
 }
 
+async function robustSearchYouTube(query) {
+    const variants = [
+        query,
+        query + ' lyrics',
+        query + ' official',
+        query + ' audio',
+        query + ' song',
+        query.replace(/friend$/, 'friends'),
+        query.replace(/friends$/, 'friend')
+    ];
+    for (const variant of variants) {
+        try {
+            const result = await searchYouTube(variant);
+            if (result) return result;
+        } catch (e) {
+            // continue to next variant
+        }
+    }
+    return null;
+}
+
 client.on('messageCreate', async (message) => {
     if (!message.content.startsWith(PREFIX) || message.author.bot) return;
     const args = message.content.slice(PREFIX.length).trim().split(/ +/);
@@ -454,7 +475,7 @@ client.on('messageCreate', async (message) => {
             song = { title: 'YouTube Video', url: search };
         } else {
             try {
-                song = await searchYouTube(search);
+                song = await robustSearchYouTube(search);
             } catch (e) {
                 return message.reply('No results found.');
             }
@@ -538,7 +559,7 @@ client.on('messageCreate', async (message) => {
             song = { title: 'YouTube Video', url: search };
         } else {
             try {
-                song = await searchYouTube(search);
+                song = await robustSearchYouTube(search);
             } catch (e) {
                 return message.reply('No results found.');
             }
