@@ -32,6 +32,7 @@ let currentPlayer = null;
 let currentChannel = null;
 let currentTextChannel = null;
 let autoplay = true;
+let isAutoplaySearching = false; // Guard to prevent autoplay flood
 
 // Initialize Spotify access token
 async function initializeSpotify() {
@@ -334,7 +335,8 @@ async function playSong(guild, song) {
     if (!currentPlayer) {
         currentPlayer = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Pause } });
         currentPlayer.on(AudioPlayerStatus.Idle, async () => {
-            if (autoplay) {
+            if (autoplay && !isAutoplaySearching) {
+                isAutoplaySearching = true; // Set guard to prevent multiple simultaneous searches
                 console.log('DEBUG autoplay: searching for related song to:', song.title);
 
                 // Extract artist from current song
@@ -377,6 +379,7 @@ async function playSong(guild, song) {
                 } else {
                     console.log('DEBUG autoplay: no songs found at all');
                 }
+                isAutoplaySearching = false; // Reset guard after search is complete
             }
             queue.shift();
             playSong(guild, queue[0]);
