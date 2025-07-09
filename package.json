@@ -13,6 +13,7 @@
     "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.18.0",
     "discord.js": "^14.21.0",
+    "dotenv": "^17.1.0",
     "googleapis": "^150.0.1",
     "spotify-web-api-node": "^5.0.2",
     "youtube-dl-exec": "^3.0.22"

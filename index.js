@@ -1,20 +1,42 @@
+require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior } = require('@discordjs/voice');
 const { spawn } = require('child_process');
 const { google } = require('googleapis');
 const SpotifyWebApi = require('spotify-web-api-node');
 
-const TOKEN = 'MTM2NzQ2MzMwNTk3NDkxMTAyNg.GOdKjn.ziWEoeEXXPFUcFCYFFl7g6NUrF2AxNqNUYOzBo'; // Replace with your bot token
-const YOUTUBE_API_KEY = 'AIzaSyCmXiRImlmawhMtZPAI_Ga_6tLMIMISSlc'; // Replace with your YouTube API key
-const SPOTIFY_CLIENT_ID = 'aad3f037004f46108c45724bd167b587'; // Replace with your Spotify Client ID
-const SPOTIFY_CLIENT_SECRET = '8d731e7762404564a8020cfbc87dc2c7'; // Replace with your Spotify Client Secret
+const TOKEN = process.env.DISCORD_TOKEN;
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
+const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const PREFIX = 'c!';
 
-const youtube = google.youtube('v3');
-const spotifyApi = new SpotifyWebApi({
-    clientId: SPOTIFY_CLIENT_ID,
-    clientSecret: SPOTIFY_CLIENT_SECRET
-});
+// Check for required environment variables
+if (!TOKEN) {
+    console.error('❌ DISCORD_TOKEN is required in .env file');
+    process.exit(1);
+}
+
+// Initialize YouTube API (optional)
+let youtube = null;
+if (YOUTUBE_API_KEY) {
+    youtube = google.youtube('v3');
+    console.log('✅ YouTube API initialized');
+} else {
+    console.log('⚠️  YouTube API key not provided - autoplay will use basic search');
+}
+
+// Initialize Spotify API (optional)
+let spotifyApi = null;
+if (SPOTIFY_CLIENT_ID && SPOTIFY_CLIENT_SECRET) {
+    spotifyApi = new SpotifyWebApi({
+        clientId: SPOTIFY_CLIENT_ID,
+        clientSecret: SPOTIFY_CLIENT_SECRET
+    });
+    console.log('✅ Spotify API initialized');
+} else {
+    console.log('⚠️  Spotify API credentials not provided - Spotify links will not work');
+}
 
 const client = new Client({
     intents: [
@@ -36,12 +58,17 @@ let isAutoplaySearching = false; // Guard to prevent autoplay flood
 
 // Initialize Spotify access token
 async function initializeSpotify() {
+    if (!spotifyApi) {
+        console.log('Spotify API not available');
+        return;
+    }
+
     try {
         const data = await spotifyApi.clientCredentialsGrant();
         spotifyApi.setAccessToken(data.body['access_token']);
-        console.log('Spotify API initialized successfully');
+        console.log('✅ Spotify API access token obtained');
     } catch (error) {
-        console.error('Error initializing Spotify API:', error);
+        console.error('❌ Error initializing Spotify API:', error);
     }
 }
 
@@ -101,6 +128,11 @@ async function getYouTubeStream(url) {
 }
 
 async function getRelatedVideos(videoId) {
+    if (!youtube || !YOUTUBE_API_KEY) {
+        console.log('YouTube API not available for related videos');
+        return null;
+    }
+
     try {
         const response = await youtube.search.list({
             key: YOUTUBE_API_KEY,
@@ -169,6 +201,11 @@ function getBaseTitle(title) {
 }
 
 async function searchRelatedArtist(artistName, excludeVideoId, lastBaseTitle) {
+    if (!youtube || !YOUTUBE_API_KEY) {
+        console.log('YouTube API not available for artist search');
+        return null;
+    }
+
     try {
         const response = await youtube.search.list({
             key: YOUTUBE_API_KEY,
@@ -221,6 +258,11 @@ async function searchRelatedArtist(artistName, excludeVideoId, lastBaseTitle) {
 }
 
 async function searchRandomMusic() {
+    if (!youtube || !YOUTUBE_API_KEY) {
+        console.log('YouTube API not available for random music search');
+        return null;
+    }
+
     // Use different search terms for variety
     const searchTerms = [
         'Olivia Rodrigo',
@@ -273,6 +315,11 @@ async function extractSpotifyTrackId(url) {
 }
 
 async function getSpotifyTrackInfo(trackId) {
+    if (!spotifyApi) {
+        console.log('Spotify API not available');
+        return null;
+    }
+
     try {
         const track = await spotifyApi.getTrack(trackId);
         const artist = track.body.artists[0].name;
@@ -293,6 +340,11 @@ async function skipCurrentSong() {
 }
 
 async function getYouTubeVideoDuration(videoId) {
+    if (!youtube || !YOUTUBE_API_KEY) {
+        console.log('YouTube API not available for duration check');
+        return null;
+    }
+
     try {
         const response = await youtube.videos.list({
             key: YOUTUBE_API_KEY,
